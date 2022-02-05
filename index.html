@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+      body { margin: 0; padding-bottom: 3rem; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+
+      #form { background: rgba(0, 0, 0, 0.15); padding: 0.25rem; position: fixed; bottom: 0; left: 0; right: 0; display: flex; height: 3rem; box-sizing: border-box; backdrop-filter: blur(10px); }
+      #input { border: none; padding: 0 1rem; flex-grow: 1; border-radius: 2rem; margin: 0.25rem; }
+      #input:focus { outline: none; }
+      #form > button { background: #333; border: none; padding: 0 1rem; margin: 0.25rem; border-radius: 3px; outline: none; color: #fff; }
+
+      #messages { list-style-type: none; margin: 0; padding: 0; }
+      #messages > li { padding: 0.5rem 1rem; }
+      #messages > li:nth-child(odd) { background: #efefef; }
+
+      #room_manager { float: right; }
+    </style>
+</head>
+
+<body>
+  <ul id="messages"></ul>
+  <dev id="input_area">
+    <form id="form" action="">
+      <input id="input" autocomplete="off" /><button>Send</button>
+    </form>
+  </dev>
+
+  <dev id="room_manager">
+    <!-- room list -->
+    <button id="joinRoom_btn">Create or join</button>
+    <button id="leaveRoom_btn" disabled >Leave</button>
+  </dev>
+
+<script type="module">
+import { io } from "https://cdn.socket.io/4.3.2/socket.io.esm.min.js";
+
+const userName = prompt('What\'s your name?');
+let currRoomName = undefined;
+let socket = io('http://localhost:7985');
+
+let messages = document.getElementById('messages');
+let form = document.getElementById('form');
+let input = document.getElementById('input');
+let joinRoom_btn = document.getElementById('joinRoom_btn');
+let leaveRoom_btn = document.getElementById('leaveRoom_btn');
+
+function submitHandler(e) {
+  e.preventDefault();
+  if (input.value) {
+    socket.emit('chat', currRoomName, `${userName}: ${input.value}`);
+    input.value = '';
+  }
+}
+form.addEventListener('submit', submitHandler);
+
+function chatHandler(msg) {
+  // room check
+  if (msg.startsWith('[+]') || msg.startsWith('[-]')) {
+    const [_, name, act, room] = msg.split(' ');
+    if (name === userName) {
+      if (act === 'joined')
+        setRoom(room);
+      else if (act === 'leaved')
+        setRoom(undefined);
+    }
+  }
+  // add msg
+  let item = document.createElement('li');
+  item.textContent = msg;
+  messages.appendChild(item);
+  window.scrollTo(0, document.body.scrollHeight);
+}
+socket.on('chat', chatHandler);
+
+function setRoom(name) {
+  if (name == undefined) {
+    joinRoom_btn.disabled = false;
+    leaveRoom_btn.disabled = true;
+  } else {
+    joinRoom_btn.disabled = true;
+    leaveRoom_btn.disabled = false;
+  }
+  currRoomName = name;
+}
+
+function joinRoom() {
+  const roomName = prompt('room name:');
+  const pw = prompt('room password:');
+  socket.emit('joinRoom', userName, roomName, pw);
+}
+joinRoom_btn.addEventListener('click', joinRoom);
+
+function leaveRoom() {
+  socket.emit('leaveRoom', userName, currRoomName);
+  setRoom(undefined);
+}
+leaveRoom_btn.addEventListener('click', leaveRoom);
+</script>
+</body>
+</html>
