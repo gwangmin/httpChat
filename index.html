@@ -46,7 +46,7 @@
 import { io } from "https://cdn.socket.io/4.3.2/socket.io.esm.min.js";
 
 const userName = prompt('What\'s your name?');
-let socket = io('http://localhost:7985');
+let socket = io(location.href);
 
 let messages = document.getElementById('messages');
 let form = document.getElementById('form');
