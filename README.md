@@ -13,10 +13,7 @@ config.js
 ## Events
 - [server<-client] 'joinRoom', (userName, roomName, pw)
 - [server<-client] 'leaveRoom', (userName, roomName)
+- [server->client] 'room info', (currentRoom, roomList)
 - [server<-client] 'chat', (roomName, msg)
 - [server->client] 'chat', (msg)
 
-## toDo
-- 특정 방에 있을 때 전체 채널 메세지가 보이는 문제 해결
-- room list
-- 입력값 validation check

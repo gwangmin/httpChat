@@ -19,11 +19,17 @@ const sock = new Server(server);
 function joinRoom(userName, roomName, s, serv) {
     s.join(roomName);
     serv.to(roomName).emit('chat', `[+] ${userName} joined ${roomName}`);
+    rooms[roomName].num += 1;
+    s.emit('room info', roomName, Object.keys(rooms));
 }
 
 function leaveRoom(userName, roomName, s, serv) {
     s.leave(roomName);
     serv.to(roomName).emit('chat', `[-] ${userName} leaved ${roomName}`)
+    rooms[roomName].num -= 1;
+    if (rooms[roomName].num <= 0)
+        delete rooms[roomName];
+    s.emit('room info', undefined, Object.keys(rooms));
 }
 
 sock.on('connection', (s) => {
@@ -37,8 +43,6 @@ sock.on('connection', (s) => {
     s.on('chat', (roomName, msg) => {
         if (roomName)
             sock.to(roomName).emit('chat', msg);
-        else
-            sock.emit('chat', msg);
     });
 
     // room join
@@ -56,7 +60,9 @@ sock.on('connection', (s) => {
         }
         // create room
         rooms[roomName] = {
+            creator: userName,
             pw: pw,
+            num: 0,
         };
         joinRoom(userName, roomName, s, sock);
     });

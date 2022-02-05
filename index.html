@@ -17,34 +17,43 @@
       #messages > li { padding: 0.5rem 1rem; }
       #messages > li:nth-child(odd) { background: #efefef; }
 
-      #room_manager { float: right; }
+      #room_manager { float: right; width: 20%; height: 500px; background: gray; }
+      #chat_area { float: left; width: 80%; }
     </style>
 </head>
 
 <body>
-  <ul id="messages"></ul>
-  <dev id="input_area">
-    <form id="form" action="">
-      <input id="input" autocomplete="off" /><button>Send</button>
-    </form>
-  </dev>
+  <div id="chat_area">
+    <ul id="messages"></ul>
+    <div id="input_area">
+      <form id="form" action="">
+        <input id="input" autocomplete="off" /><button>Send</button>
+      </form>
+      <p></p>
+    </div>
+  </div>
 
-  <dev id="room_manager">
-    <!-- room list -->
+  <div id="room_manager">
+    <p></p>
     <button id="joinRoom_btn">Create or join</button>
     <button id="leaveRoom_btn" disabled >Leave</button>
-  </dev>
+    <h1 id="curr_room">Current: </h1>
+    <ul id="room_list">
+    </ul>
+  </div>
 
 <script type="module">
 import { io } from "https://cdn.socket.io/4.3.2/socket.io.esm.min.js";
 
 const userName = prompt('What\'s your name?');
-let currRoomName = undefined;
 let socket = io('http://localhost:7985');
 
 let messages = document.getElementById('messages');
 let form = document.getElementById('form');
 let input = document.getElementById('input');
+let currRoomName = undefined;
+let curr_room = document.getElementById('curr_room');
+let room_list = document.getElementById('room_list');
 let joinRoom_btn = document.getElementById('joinRoom_btn');
 let leaveRoom_btn = document.getElementById('leaveRoom_btn');
 
@@ -57,34 +66,37 @@ function submitHandler(e) {
 }
 form.addEventListener('submit', submitHandler);
 
-function chatHandler(msg) {
-  // room check
-  if (msg.startsWith('[+]') || msg.startsWith('[-]')) {
-    const [_, name, act, room] = msg.split(' ');
-    if (name === userName) {
-      if (act === 'joined')
-        setRoom(room);
-      else if (act === 'leaved')
-        setRoom(undefined);
-    }
-  }
-  // add msg
-  let item = document.createElement('li');
-  item.textContent = msg;
-  messages.appendChild(item);
-  window.scrollTo(0, document.body.scrollHeight);
+function addListItem(parent, item) {
+  let child = document.createElement('li');
+  child.textContent = item;
+  parent.appendChild(child);
 }
-socket.on('chat', chatHandler);
 
-function setRoom(name) {
-  if (name == undefined) {
+socket.on('chat', (msg) => {
+  addListItem(messages, msg);
+  window.scrollTo(0, document.body.scrollHeight);
+});
+
+socket.on('room info', (curr, list) => {
+  setRoom(curr, list);
+});
+
+function setRoom(curr, list) {
+  // curr
+  if (curr == undefined) {
     joinRoom_btn.disabled = false;
     leaveRoom_btn.disabled = true;
   } else {
     joinRoom_btn.disabled = true;
     leaveRoom_btn.disabled = false;
   }
-  currRoomName = name;
+  currRoomName = curr;
+  curr_room.textContent = `Current: ${currRoomName}`;
+  // list
+  while (room_list.hasChildNodes())
+    room_list.removeChild(room_list.firstChild);
+  for (let item of list)
+    addListItem(room_list, item);
 }
 
 function joinRoom() {
